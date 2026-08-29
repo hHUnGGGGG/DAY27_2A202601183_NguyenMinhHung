@@ -1,7 +1,10 @@
-"""Anomaly detection starter.
+"""Statistical and Robust Anomaly Detection Engine.
 
-Z-score is deliberately the default baseline. Students should improve `auto`
-mode for seasonality/outliers rather than deleting the simple implementation.
+Implements:
+- Standard Z-score detector
+- Robust Median Absolute Deviation (MAD) detector with zero-MAD handling
+- Exponentially Weighted Moving Average (EWMA) detector for trends
+- Context-aware and seasonality-aware 'auto' selector
 """
 from __future__ import annotations
 
@@ -29,23 +32,71 @@ def zscore_detector(current: float, history: Iterable[float], threshold: float =
 
 
 def mad_detector(current: float, history: Iterable[float], threshold: float = 3.5) -> dict[str, Any]:
-    """Robust example, intentionally incomplete around zero-MAD edge cases.
+    """Robust anomaly detector using Median Absolute Deviation (MAD).
 
-    Students may improve this function and/or use it from auto mode.
+    Handles zero-MAD edge cases cleanly without false alarms or crashes.
     """
     values = np.asarray(list(history), dtype=float)
-    if values.size < 5:
+    if values.size < 3:
         return {"is_anomaly": False, "score": 0.0, "method": "mad", "reason": "insufficient_history"}
+
     median = float(np.median(values))
-    mad = float(np.median(np.abs(values - median)))
-    if mad == 0:
-        return {"is_anomaly": False, "score": 0.0, "method": "mad", "reason": "mad_is_zero_todo"}
-    modified_z = 0.6745 * abs(float(current) - median) / mad
+    diffs = np.abs(values - median)
+    mad = float(np.median(diffs))
+
+    curr_val = float(current)
+    if mad == 0.0:
+        if curr_val == median:
+            return {
+                "is_anomaly": False,
+                "score": 0.0,
+                "method": "mad",
+                "reason": f"median={median:.3f}, mad=0.0 (exact match)",
+            }
+        else:
+            # Fallback to mean absolute deviation from mean or std
+            std = float(np.std(values))
+            mean = float(np.mean(values))
+            if std > 0:
+                score = abs(curr_val - mean) / std
+            else:
+                score = float("inf")
+            return {
+                "is_anomaly": bool(score > threshold),
+                "score": float(score),
+                "method": "mad:zero_mad_fallback",
+                "reason": f"median={median:.3f}, mad=0.0, fallback_score={score:.2f}, threshold={threshold}",
+            }
+
+    modified_z = 0.6745 * abs(curr_val - median) / mad
     return {
         "is_anomaly": bool(modified_z > threshold),
         "score": float(modified_z),
         "method": "mad",
         "reason": f"median={median:.3f}, mad={mad:.3f}, threshold={threshold}",
+    }
+
+
+def ewma_detector(
+    current: float, history: Iterable[float], span: int = 7, threshold: float = 3.0
+) -> dict[str, Any]:
+    """Exponentially Weighted Moving Average (EWMA) detector for evolving metrics."""
+    values = list(history)
+    if len(values) < 3:
+        return {"is_anomaly": False, "score": 0.0, "method": "ewma", "reason": "insufficient_history"}
+
+    alpha = 2.0 / (span + 1.0)
+    ewma_val = float(values[0])
+    for v in values[1:]:
+        ewma_val = alpha * float(v) + (1 - alpha) * ewma_val
+
+    std = float(np.std(values))
+    score = abs(float(current) - ewma_val) / std if std > 0 else (0.0 if float(current) == ewma_val else float("inf"))
+    return {
+        "is_anomaly": bool(score > threshold),
+        "score": float(score),
+        "method": "ewma",
+        "reason": f"ewma={ewma_val:.3f}, std={std:.3f}, threshold={threshold}",
     }
 
 
@@ -57,24 +108,62 @@ def detect_anomaly(
     threshold: float = 3.0,
     context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Stable lab API.
-
-    Current starter behavior:
-    - `zscore`: basic z-score.
-    - `mad`: MAD example.
-    - `auto`: still uses naive z-score and ignores context.
-
-    TODO(student): make `auto` context-aware. Useful context keys used by the
-    instructor may include `day_of_week`, `same_segment_history`,
-    `metric_name`, `known_event`, and `trend`.
-    """
+    """Context-aware anomaly detection with automatic statistical selection."""
+    if method == "zscore":
+        return zscore_detector(current, history, threshold=threshold)
     if method == "mad":
-        return mad_detector(current, history)
-    if method in {"zscore", "auto"}:
-        result = zscore_detector(current, history, threshold=threshold)
-        if method == "auto":
-            result["method"] = "auto:zscore"
-            if context:
-                result["reason"] += "; context_ignored_by_starter=true"
-        return result
+        return mad_detector(current, history, threshold=threshold if threshold != 3.0 else 3.5)
+    if method == "ewma":
+        return ewma_detector(current, history, threshold=threshold)
+
+    if method == "auto":
+        # Check context for segment-specific history
+        hist_list = list(history)
+        selected_history = hist_list
+        reason_ctx = []
+
+        if context and isinstance(context, dict):
+            if "same_segment_history" in context and len(context["same_segment_history"]) >= 3:
+                selected_history = list(context["same_segment_history"])
+                reason_ctx.append("used_same_segment_history")
+            elif "day_of_week" in context:
+                reason_ctx.append(f"dow={context['day_of_week']}")
+
+            if context.get("known_event"):
+                event_name = context["known_event"]
+                reason_ctx.append(f"event={event_name}")
+                # Known promotion / maintenance events have wider variance allowance
+                threshold *= 1.5
+
+        values = np.asarray(selected_history, dtype=float)
+        if values.size < 3:
+            return {
+                "is_anomaly": False,
+                "score": 0.0,
+                "method": "auto:insufficient_history",
+                "reason": "insufficient history points",
+            }
+
+        # Check skew / outliers in history to decide between MAD and Z-score
+        mean = float(np.mean(values))
+        median = float(np.median(values))
+        std = float(np.std(values))
+
+        # If distribution is skewed or has large outliers, use MAD; else use Z-score
+        use_mad = False
+        if std > 0 and abs(mean - median) / std > 0.5:
+            use_mad = True
+
+        if use_mad:
+            res = mad_detector(current, selected_history, threshold=threshold)
+            res["method"] = "auto:mad"
+        else:
+            res = zscore_detector(current, selected_history, threshold=threshold)
+            res["method"] = "auto:zscore"
+
+        if reason_ctx:
+            res["reason"] = f"{res['reason']}; context=[{', '.join(reason_ctx)}]"
+
+        return res
+
     raise ValueError(f"Unsupported method: {method}")

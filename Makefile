@@ -16,7 +16,7 @@ gx:
 
 dbt:
 	$(PYTHON) scripts/sync_dbt_seeds.py
-	dbt build --project-dir dbt_project --profiles-dir dbt_project
+	$(PYTHON) -m dbt.cli.main build --project-dir dbt_project --profiles-dir dbt_project
 
 dashboard:
 	streamlit run dashboard/app.py

@@ -1,0 +1,296 @@
+{
+  "timestamp": "2026-08-29T13:27:42.525606+00:00",
+  "orders_rows": 600,
+  "kb_docs_count": 5,
+  "orders_failed_checks": 0,
+  "orders_critical_failures": 0,
+  "kb_failed_checks": 0,
+  "kb_critical_failures": 0,
+  "orders_freshness_minutes": 5.0254018,
+  "kb_freshness_minutes": 10.010373183333334,
+  "row_count_anomaly": {
+    "is_anomaly": true,
+    "score": 27.226166541953233,
+    "method": "auto:zscore",
+    "reason": "mean=250.833, std=12.825, threshold=3.0; context=[used_same_segment_history]"
+  },
+  "kb_text_length_signal": {
+    "is_anomaly": false,
+    "score": 0.7547940916996035,
+    "method": "zscore",
+    "reason": "mean=14.834, std=1.015, threshold=3.0",
+    "metric": "mean_text_length",
+    "current_mean": 15.6
+  },
+  "kb_norm_signal": {
+    "is_anomaly": true,
+    "score": 36.93754396066636,
+    "method": "embedding_norm_shift",
+    "reason": "current_norm_mean=0.3120, baseline_norm_mean=0.8083, std=0.0134"
+  },
+  "contract_slo": {
+    "target": 0.999,
+    "actual_bad_rate": 0.0,
+    "allowed_bad_rate": 0.0010000000000000009,
+    "burn_rate": 0.0,
+    "remaining_error_budget_fraction": 1.0,
+    "breached": false
+  },
+  "burn_evaluation": {
+    "page": false,
+    "severity": "ok",
+    "reason": "budget_healthy: short=0.0x, long=0.0x",
+    "short_window_burn": 0.0,
+    "long_window_burn": 0.0,
+    "action": "NO_ACTION"
+  },
+  "sample_blast_radius_from_stg_orders": [
+    "fct_daily_revenue",
+    "ceo_revenue_dashboard"
+  ],
+  "column_blast_radius_amount": [
+    "stg_orders.amount_usd",
+    "fct_daily_revenue.daily_revenue",
+    "ceo_revenue_dashboard.revenue"
+  ],
+  "kb_blast_radius": [
+    "kb_active_docs",
+    "rag_index",
+    "support_agent"
+  ],
+  "orders_issues": [
+    {
+      "check": "not_null",
+      "column": "order_id",
+      "severity": "critical",
+      "passed": true,
+      "details": "null_count=0"
+    },
+    {
+      "check": "type",
+      "column": "order_id",
+      "severity": "critical",
+      "passed": true,
+      "details": "invalid_integer_count=0; expected_type=integer"
+    },
+    {
+      "check": "unique",
+      "column": "order_id",
+      "severity": "critical",
+      "passed": true,
+      "details": "duplicate_rows=0"
+    },
+    {
+      "check": "not_null",
+      "column": "customer_id",
+      "severity": "critical",
+      "passed": true,
+      "details": "null_count=0"
+    },
+    {
+      "check": "type",
+      "column": "customer_id",
+      "severity": "critical",
+      "passed": true,
+      "details": "invalid_string_count=0; expected_type=string"
+    },
+    {
+      "check": "not_null",
+      "column": "amount",
+      "severity": "critical",
+      "passed": true,
+      "details": "null_count=0"
+    },
+    {
+      "check": "type",
+      "column": "amount",
+      "severity": "critical",
+      "passed": true,
+      "details": "invalid_number_count=0; expected_type=number"
+    },
+    {
+      "check": "range",
+      "column": "amount",
+      "severity": "critical",
+      "passed": true,
+      "details": "invalid_count=0"
+    },
+    {
+      "check": "not_null",
+      "column": "currency",
+      "severity": "critical",
+      "passed": true,
+      "details": "null_count=0"
+    },
+    {
+      "check": "type",
+      "column": "currency",
+      "severity": "critical",
+      "passed": true,
+      "details": "invalid_string_count=0; expected_type=string"
+    },
+    {
+      "check": "accepted_values",
+      "column": "currency",
+      "severity": "critical",
+      "passed": true,
+      "details": "invalid_count=0; accepted=['USD', 'VND']"
+    },
+    {
+      "check": "not_null",
+      "column": "status",
+      "severity": "warning",
+      "passed": true,
+      "details": "null_count=0"
+    },
+    {
+      "check": "type",
+      "column": "status",
+      "severity": "warning",
+      "passed": true,
+      "details": "invalid_string_count=0; expected_type=string"
+    },
+    {
+      "check": "accepted_values",
+      "column": "status",
+      "severity": "warning",
+      "passed": true,
+      "details": "invalid_count=0; accepted=['pending', 'completed', 'refunded', 'cancelled']"
+    },
+    {
+      "check": "not_null",
+      "column": "created_at",
+      "severity": "critical",
+      "passed": true,
+      "details": "null_count=0"
+    },
+    {
+      "check": "type",
+      "column": "created_at",
+      "severity": "critical",
+      "passed": true,
+      "details": "invalid_datetime_count=0; expected_type=datetime"
+    },
+    {
+      "check": "not_null",
+      "column": "updated_at",
+      "severity": "critical",
+      "passed": true,
+      "details": "null_count=0"
+    },
+    {
+      "check": "type",
+      "column": "updated_at",
+      "severity": "critical",
+      "passed": true,
+      "details": "invalid_datetime_count=0; expected_type=datetime"
+    },
+    {
+      "check": "freshness",
+      "column": "updated_at",
+      "severity": "warning",
+      "passed": true,
+      "details": "delay_minutes=5.02; max_delay_minutes=30.0"
+    }
+  ],
+  "kb_issues": [
+    {
+      "check": "not_null",
+      "column": "doc_id",
+      "severity": "warning",
+      "passed": true,
+      "details": "null_count=0"
+    },
+    {
+      "check": "type",
+      "column": "doc_id",
+      "severity": "warning",
+      "passed": true,
+      "details": "invalid_string_count=0; expected_type=string"
+    },
+    {
+      "check": "not_null",
+      "column": "version",
+      "severity": "warning",
+      "passed": true,
+      "details": "null_count=0"
+    },
+    {
+      "check": "type",
+      "column": "version",
+      "severity": "warning",
+      "passed": true,
+      "details": "invalid_integer_count=0; expected_type=integer"
+    },
+    {
+      "check": "not_null",
+      "column": "effective_at",
+      "severity": "warning",
+      "passed": true,
+      "details": "null_count=0"
+    },
+    {
+      "check": "type",
+      "column": "effective_at",
+      "severity": "warning",
+      "passed": true,
+      "details": "invalid_datetime_count=0; expected_type=datetime"
+    },
+    {
+      "check": "not_null",
+      "column": "published_at",
+      "severity": "warning",
+      "passed": true,
+      "details": "null_count=0"
+    },
+    {
+      "check": "type",
+      "column": "published_at",
+      "severity": "warning",
+      "passed": true,
+      "details": "invalid_datetime_count=0; expected_type=datetime"
+    },
+    {
+      "check": "not_null",
+      "column": "source_uri",
+      "severity": "warning",
+      "passed": true,
+      "details": "null_count=0"
+    },
+    {
+      "check": "type",
+      "column": "source_uri",
+      "severity": "warning",
+      "passed": true,
+      "details": "invalid_string_count=0; expected_type=string"
+    },
+    {
+      "check": "not_null",
+      "column": "content",
+      "severity": "warning",
+      "passed": true,
+      "details": "null_count=0"
+    },
+    {
+      "check": "type",
+      "column": "content",
+      "severity": "warning",
+      "passed": true,
+      "details": "invalid_string_count=0; expected_type=string"
+    },
+    {
+      "check": "length",
+      "column": "content",
+      "severity": "warning",
+      "passed": true,
+      "details": "invalid_length_count=0"
+    },
+    {
+      "check": "freshness",
+      "column": "published_at",
+      "severity": "warning",
+      "passed": true,
+      "details": "delay_minutes=10.01; max_delay_minutes=60.0"
+    }
+  ]
+}
